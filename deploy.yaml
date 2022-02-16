@@ -1,0 +1,110 @@
+##Create secret first
+#apiVersion: v1
+#kind: Secret
+#metadata:
+#  name: icloud-creds
+#type: Opaque
+#data:
+#  username: <username>
+#  password: <Password>
+---
+#PVC for storing icloud session data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: icloud-session
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+#PVC for storing icloud data in azure files
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: icloud-storage
+spec:
+  resources:
+    requests:
+      storage: 250Gi
+  storageClassName: azurefile-csi	
+  accessModes:
+    - ReadWriteOnce
+    - ReadOnlyMany
+---
+#cronjob for running icloudPhotosDownloader on a schedule
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: icloudbackup
+spec:
+  schedule: "0 0 1 * *"  
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 720
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: icloudpd
+            image: icloudpd/icloudpd:latest
+            command: ["sh", "-c", "icloudpd -u $USERNAME -p $PASSWORD -d /data --cookie-directory /cookies --size original"]
+            volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: session
+              mountPath: /cookies
+            env:
+            - name: USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: icloud-creds
+                  key: username
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: icloud-creds
+                  key: password
+          volumes:
+          - name: data
+            persistentVolumeClaim:
+              claimName: icloud-storage
+          - name: session
+            persistentVolumeClaim:
+              claimName: icloud-session
+---
+#Pod for handling 2fa login process to icloud (has to be done manually)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: icloudlogin
+  labels:
+    app: icloudlogin
+spec:
+  restartPolicy: OnFailure
+  containers:
+  - name: icloudlogin
+    image: icloudpd/icloudpd:latest
+    #container will wait 2 minutes for user to exec the login/2fa process on the container: 
+    #> kubectl exec -it icloudlogin -- icloudpd --username $USERNAME --password $PASSWORD --cookie-directory /cookies --list-albums
+    command: ["sh", "-c", "while ! test -f \"/cookies/${USERNAME//[@.]/}\"; do sleep 120; echo \"waiting for auth...\"; done"]
+    volumeMounts:
+    - name: session
+      mountPath: /cookies
+    env:
+    - name: USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: icloud-creds
+          key: username
+    - name: PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: icloud-creds
+          key: password
+  volumes:
+  - name: session
+    persistentVolumeClaim:
+      claimName: icloud-session
