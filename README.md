@@ -5,8 +5,7 @@ An attempt at extracting photos and documents from icloud to onedrive
 * [icloud_photos_downloader](https://github.com/icloud-photos-downloader/icloud_photos_downloader)
 * [onedrive for linux](https://github.com/abraunegg/onedrive)
 
-## Model
-### iCloud
+## How it works
 Creates a single pod (icloudlogin) to handle initial login and 2fa to icloud. The cookie is persisted to a PV which is shared between the login pod and the CronJob which runs the actual download task. The icloud session expires after 2 months forcing the user to manually login again at that point. 
 
 **TODO**: add an alert to notify the user that the session is expired.
