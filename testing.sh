@@ -1,1 +1,2 @@
-k create job --from=cronjob/icloudbackup testingicloudbackup
+#!/bin/bash
+kubectl create job --from=cronjob/icloudbackup testingicloudbackup

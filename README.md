@@ -13,3 +13,11 @@ Creates a single pod (icloudlogin) to handle initial login and 2fa to icloud. Th
 Similarly, a single pod is created to handle login for onedrive. The resulting session is persisted to a PV. This session is good forever so this pod only has to be created and interacted with once.
 
 The cronjob runs both icloudpd and onedrive. icloudpd downloads all photos to a shared volume. Onedrive monitors the shared volume and uploads the photos.
+
+```bash
+# Edit 1-secrets.yaml
+./deploy.sh
+# login to icloud
+# login to onedrive
+# cronjob will run 1st of each month
+```
