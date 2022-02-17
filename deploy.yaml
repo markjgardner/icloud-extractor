@@ -8,11 +8,23 @@
 #  username: <username>
 #  password: <Password>
 ---
-#PVC for storing icloud session data
+#PVC for storing icloud session
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: icloud-session
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+#PVC for storing onedrive session
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: onedrive-session
 spec:
   accessModes:
   - ReadWriteOnce
@@ -54,7 +66,7 @@ spec:
             volumeMounts:
             - name: data
               mountPath: /data
-            - name: session
+            - name: icloudsession
               mountPath: /cookies
             env:
             - name: USERNAME
@@ -67,13 +79,24 @@ spec:
                 secretKeyRef:
                   name: icloud-creds
                   key: password
+          - name: onedrive
+            image: driveone/onedrive:latest
+            command: ["sh", "-c", "onedrive --synchronize --upload-only --no-remote-delete"]
+            volumeMounts:
+            - name: onedrivesession
+              mountPath: /onedrive/conf
+            - name: data
+              mountPath: /onedrive/data
           volumes:
           - name: data
             persistentVolumeClaim:
               claimName: icloud-storage
-          - name: session
+          - name: icloudsession
             persistentVolumeClaim:
               claimName: icloud-session
+          - name: onedrivesession
+            persistentVolumeClaim:
+              claimName: onedrive-session
 ---
 #Pod for handling 2fa login process to icloud (has to be done manually)
 apiVersion: v1
@@ -108,3 +131,25 @@ spec:
   - name: session
     persistentVolumeClaim:
       claimName: icloud-session
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: onedrivelogin
+  labels:
+    app: onedrivelogin
+spec:
+  restartPolicy: Never
+  containers:
+  - name: onedrivelogin
+    image: driveone/onedrive:latest
+    #container will wait 5 minutes for user to exec the login process on the container: 
+    #> kubectl exec -it onedrivelogin -- onedrive
+    command: ["sh", "-c", "echo \"waiting for auth...\";  sleep 300"]
+    volumeMounts:
+    - name: onedrivesession
+      mountPath: /onedrive/conf
+  volumes:
+  - name: onedrivesession
+    persistentVolumeClaim:
+      claimName: onedrive-session

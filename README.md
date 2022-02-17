@@ -1,7 +1,7 @@
 # icloud-extractor
 An attempt at extracting photos and documents from icloud to onedrive
 
-### Based on
+## Based on
 * [icloud_photos_downloader](https://github.com/icloud-photos-downloader/icloud_photos_downloader)
 * [onedrive for linux](https://github.com/abraunegg/onedrive)
 
@@ -11,4 +11,6 @@ Creates a single pod (icloudlogin) to handle initial login and 2fa to icloud. Th
 
 **TODO**: add an alert to notify the user that the session is expired.
 
-The cronjob runs both icloudpd and onedrive. icloudpd downloads all photos to a shared data PV. Onedrive monitors the shared volume and uploads the photos.
+Similarly, a single pod is created to handle login for onedrive. The resulting session is persisted to a PV. This session is good forever so this pod only has to be created and interacted with once.
+
+The cronjob runs both icloudpd and onedrive. icloudpd downloads all photos to a shared volume. Onedrive monitors the shared volume and uploads the photos.
