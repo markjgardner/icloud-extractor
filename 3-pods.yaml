@@ -1,0 +1,55 @@
+#Pod for handling 2fa login process to icloud (has to be done manually)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: icloudlogin
+  labels:
+    app: icloudlogin
+spec:
+  restartPolicy: OnFailure
+  containers:
+  - name: icloudlogin
+    image: icloudpd/icloudpd:latest
+    #container will wait 2 minutes for user to exec the login/2fa process on the container: 
+    #> kubectl exec -it icloudlogin -- icloudpd --username $USERNAME --password $PASSWORD --cookie-directory /cookies --list-albums
+    command: ["sh", "-c", "while ! test -f \"/cookies/${USERNAME//[@.]/}\"; do sleep 120; echo \"waiting for auth...\"; done"]
+    volumeMounts:
+    - name: session
+      mountPath: /cookies
+    env:
+    - name: USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: icloud-creds
+          key: username
+    - name: PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: icloud-creds
+          key: password
+  volumes:
+  - name: session
+    persistentVolumeClaim:
+      claimName: icloud-session
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: onedrivelogin
+  labels:
+    app: onedrivelogin
+spec:
+  restartPolicy: Never
+  containers:
+  - name: onedrivelogin
+    image: driveone/onedrive:latest
+    #container will wait 5 minutes for user to exec the login process on the container: 
+    #> kubectl exec -it onedrivelogin -- onedrive
+    command: ["sh", "-c", "echo \"waiting for auth...\";  sleep 300"]
+    volumeMounts:
+    - name: onedrivesession
+      mountPath: /onedrive/conf
+  volumes:
+  - name: onedrivesession
+    persistentVolumeClaim:
+      claimName: onedrive-session

@@ -1,0 +1,52 @@
+
+#cronjob for running icloudPhotosDownloader on a schedule
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: icloudbackup
+spec:
+  schedule: "0 0 1 * *"  
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 720
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: icloudpd
+            image: icloudpd/icloudpd:latest
+            command: ["sh", "-c", "icloudpd -u $USERNAME -p $PASSWORD -d /data --cookie-directory /cookies --size original"]
+            volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: icloudsession
+              mountPath: /cookies
+            env:
+            - name: USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: icloud-creds
+                  key: username
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: icloud-creds
+                  key: password
+          - name: onedrive
+            image: driveone/onedrive:latest
+            command: ["sh", "-c", "onedrive --synchronize --upload-only --no-remote-delete"]
+            volumeMounts:
+            - name: onedrivesession
+              mountPath: /onedrive/conf
+            - name: data
+              mountPath: /onedrive/data
+          volumes:
+          - name: data
+            persistentVolumeClaim:
+              claimName: icloud-storage
+          - name: icloudsession
+            persistentVolumeClaim:
+              claimName: icloud-session
+          - name: onedrivesession
+            persistentVolumeClaim:
+              claimName: onedrive-session

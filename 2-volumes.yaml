@@ -1,0 +1,37 @@
+#PVC for storing icloud session
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: icloud-session
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+#PVC for storing onedrive session
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: onedrive-session
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+#PVC for storing icloud data in azure files
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: icloud-storage
+spec:
+  resources:
+    requests:
+      storage: 250Gi
+  storageClassName: azurefile-csi	
+  accessModes:
+    - ReadWriteOnce
+    - ReadOnlyMany
