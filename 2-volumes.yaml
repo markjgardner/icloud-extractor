@@ -8,7 +8,7 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 100Mi
+      storage: 10Mi
 ---
 #PVC for storing onedrive session
 apiVersion: v1
@@ -20,7 +20,7 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 100Mi
+      storage: 10Mi
 ---
 #PVC for storing icloud data in azure files
 apiVersion: v1

@@ -48,7 +48,7 @@ spec:
     command: ["sh", "-c", "echo \"waiting for auth...\";  sleep 300"]
     volumeMounts:
     - name: onedrivesession
-      mountPath: /onedrive/conf
+      mountPath: /root/.config/onedrive
   volumes:
   - name: onedrivesession
     persistentVolumeClaim:
